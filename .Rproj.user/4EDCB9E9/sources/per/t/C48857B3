@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1593301453392.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2169338437",
+    "id" : "C48857B3",
+    "lastKnownWriteTime" : 1593301468,
+    "last_content_update" : 1593301468726,
+    "path" : "C:/Users/Beatriz Huertas/Desktop/3º Ingeniería informática/2º cuatrimestre/Laboratorio de computación científica/Book covid analysis/04_Regression.Rmd",
+    "project_path" : "04_Regression.Rmd",
+    "properties" : {
+        "cursorPosition" : "200,0",
+        "scrollLine" : "0"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 6,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

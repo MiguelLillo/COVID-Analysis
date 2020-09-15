@@ -1,0 +1,308 @@
+# Visualization
+
+## Death and Healed Calendar
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r message=FALSE, warning=FALSE}
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(openair)
+library(lattice)
+cs_export <- read_excel("cs_export.xls")
+filasandalucia <- filter(cs_export, Territorio=="Andalucía" )
+#View(filasandalucia)
+colnames(filasandalucia)[1] <- "fecha"
+##Calendario defunciones
+filasandalucia$fecha <- as.factor(filasandalucia$fecha)
+class(filasandalucia$fecha)
+datos <- filasandalucia %>% dplyr::select(date = fecha, Defunciones) %>% mutate(date = as.Date(date,format="%d/%m/%Y")) %>% 
+  # Quitar febrero
+  filter(month(date) != 2)
+datos <- as.data.frame(datos)
+# Guardar calendario
+#png("14.png", width = 10, height = 3.5, units = "in", res = 300)
+calendarPlot(datos,
+             pollutant = "Defunciones",
+             # Título
+             main = "Defunciones diarias por coronavirus en Andalucía \nMarzo-Mayo, 2020",
+             # Para que el calendario empiece en lunes
+             w.shift = 2,
+             limits = c(0, max(datos$Defunciones)),
+             # Colores para los eventos (del 0 al 3)
+             cols = c("white", "darkred"),
+             key.header = "Defunciones diarias")
+#dev.off()
+## Calendario curados
+datos <- filasandalucia %>% 
+  dplyr::select(date = fecha, Curados) %>% 
+  mutate(date = as.Date(date,format="%d/%m/%Y")) %>% 
+  # Quitar febrero
+  filter(month(date) != 2)
+datos <- as.data.frame(datos)
+#png("15.png", width = 10, height = 3.5, units = "in", res = 300)
+calendarPlot(datos,
+             pollutant = "Curados",
+             # Título
+             main = "Curados cada día de coronavirus en Andalucía \nMarzo-Mayo, 2020",
+             # Para que el calendario empiece en lunes
+             w.shift = 2,
+             limits = c(0, max(datos$Curados)),
+             # Colores para los eventos (del 0 al 3)
+             cols = c("white", "darkgreen"),
+             key.header = "Curados cada día")
+#dev.off()
+```
+
+## Confirmed cases bar graph
+
+```{r message=FALSE, warning=FALSE}
+# Librerías a utilizar
+library(tidyverse)
+library(gganimate)
+library(readxl)
+# Cargo los datos a trabajar
+cs_export <- read_excel("cs_export.xls") %>% print()
+# proceso los datos a utlizar
+confirmados <- 
+ cs_export %>% 
+  group_by(Territorio, `Fecha declaración`)%>% 
+  print()
+almeria <- confirmados %>% filter(Territorio=="Almería")
+almeriaacum <- colSums(almeria[3:8])
+cadiz <- confirmados %>% filter(Territorio=="Cádiz")
+cadizacum <- colSums(cadiz[3:8])
+cordoba <- confirmados %>% filter(Territorio=="Córdoba")
+cordobaacum <- colSums(cordoba[3:8])
+granada <- confirmados %>% filter(Territorio=="Granada")
+granadaacum <- colSums(granada[3:8])
+huelva <- confirmados %>% filter(Territorio=="Huelva")
+huelvaacum <- colSums(huelva[3:8])
+jaen <- confirmados %>% filter(Territorio=="Jaén")
+jaenacum <- colSums(jaen[3:8])
+malaga <- confirmados %>% filter(Territorio=="Málaga")
+malagaacum <- colSums(malaga[3:8])
+sevilla <- confirmados %>% filter(Territorio=="Sevilla")
+sevillaacum <- colSums(sevilla[3:8])
+dfaux <- data.frame("Provincia"=c("Sevilla","Málaga","Jaén","Huelva","Granada","Córdoba","Cádiz","Almería"),"ConfirmadosAcum"=c(sevillaacum[6],malagaacum[6],jaenacum[6],huelvaacum[6],granadaacum[6],cordobaacum[6],cadizacum[6],almeriaacum[6]))
+# genero el gráfico estático
+plot_conf <- 
+  ggplot(dfaux, 
+         aes(x = dfaux$ConfirmadosAcum, 
+             y = dfaux$Provincia, 
+             colour = as.factor(dfaux$Provincia), 
+             fill = as.factor(dfaux$Provincia))) + 
+  geom_bar(stat = "identity",position="stack") + 
+  scale_x_continuous(breaks = seq(500, 5000, 500), expand = c(0,0)) + 
+  theme_bw() + 
+  theme(axis.title = element_blank(), 
+        axis.ticks.y = element_blank(), 
+        legend.position = "none", 
+        panel.grid.minor = element_blank(), 
+        panel.grid.major.y = element_blank())+ggtitle("Casos confirmados mediante tests por provincias")
+plot_conf
+```
+
+## Andalusia bar graphs
+
+```{r message=FALSE, warning=FALSE}
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(openair)
+library(lattice)
+cs_export <- read_excel("cs_export.xls")
+filasandalucia <- filter(cs_export, Territorio=="Andalucía" )
+aux <- filasandalucia
+fechas <- as.Date(aux$`Fecha declaración`,"%d/%m/%Y")
+aux$`Fecha declaración` <- sort(fechas)
+c <- aux$Curados
+h <- aux$Hospitalizados
+d <- aux$Defunciones
+uci <- aux$UCI
+conf <- aux$`Confirmados PCR`
+totalconf <- aux$`Total confirmados (PCR+test)`
+salidac <- vector("numeric",length(c))
+salidah <-vector("numeric",length(h))
+salidad <- vector("numeric",length(d))
+salidauci <- vector("numeric",length(uci))
+salidaconf <- vector("numeric",length(conf))
+salidatotalconf <- vector("numeric",length(totalconf))
+for(i in seq_along(c)){
+  
+  salidac[length(c)+1-i] <- c[i]
+  salidah[length(h)+1-i] <- h[i]
+  salidad[length(d)+1-i] <- d[i]
+  salidauci[length(uci)+1-i] <- uci[i]
+  salidaconf[length(conf)+1-i] <- conf[i]
+  salidatotalconf[length(totalconf)+1-i] <- totalconf[i]
+  
+}
+aux$Curados <- salidac
+aux$Hospitalizados <- salidah
+aux$Defunciones <- salidad
+aux$UCI <- salidauci
+aux$`Confirmados PCR` <- salidaconf
+aux$`Total confirmados (PCR+test)` <- salidatotalconf
+barplot(names.arg=aux$`Fecha declaración`,aux$Defunciones,main="Defunciones diarias en Andalucía",col="grey45")
+barplot(names.arg=aux$`Fecha declaración`,aux$Curados,main="Curaciones diarias en Andalucía",col="limegreen")
+barplot(names.arg=aux$`Fecha declaración`,aux$Hospitalizados,main="Hospitalizaciones diarias en Andalucía",col="mediumorchid4")
+barplot(names.arg=aux$`Fecha declaración`,aux$UCI,main="Ingresos diarios en UCI en Andalucía",col="tomato3")
+barplot(names.arg=aux$`Fecha declaración`,aux$`Confirmados PCR`,main="Positivos en test PCR en Andalucía",col="orange2")
+barplot(names.arg=aux$`Fecha declaración`,aux$`Total confirmados (PCR+test)`,ylim=c(0,max(aux$`Total confirmados (PCR+test)`)),main="Confirmados diarios en Andalucía (PCR+test)",col="orange4")
+```
+
+## Map of Andalusia
+
+```{r message=FALSE, warning=FALSE}
+# para manipular dataframes
+library(tidyverse)
+# para importar archivos shapefiles y excel
+library(rgdal)
+library(readxl)
+# Para transformar los archivos shapefiles 
+library(broom)
+library(ggplot2)
+library(plotly)
+# Guardamos el archivo shapefile
+shapefile_provincias <- rgdal::readOGR("Provincias_ETRS89_30N/Provincias_ETRS89_30N.shp")
+# Para convertir el archivo shapefile en un dataframe utilizamos la función tidy()
+data_provincias <- tidy(shapefile_provincias)
+nombres_provincias <- data.frame(shapefile_provincias$Texto)
+nombres_provincias$id <- as.character(seq(0, nrow(nombres_provincias)-1))
+head(nombres_provincias)
+data_provincias_mapa <- left_join(data_provincias, nombres_provincias, by = "id")
+reemplazos <-cbind(data_provincias,gsub("AlmerÃ�a","Almeria", data_provincias_mapa$shapefile_provincias.Texto)                   )
+colnames(reemplazos)[8] <- "Provincias"
+reemplazos$Provincias <- as.character(reemplazos$Provincias)
+reemplazos$Provincias[2443:3298] <- "Almeria"
+reemplazos$Provincias <- as.factor(reemplazos$Provincias)
+provinciasandalucia <- filter(reemplazos,reemplazos$Provincias %in% c("Sevilla","Huelva","CÃ³rdoba","MÃ¡laga","JaÃ©n","Almeria","CÃ¡diz","Granada"))
+cs_export <- read_excel("cs_export.xls") %>% print()
+# proceso los datos a utlizar
+confirmados <- 
+  cs_export %>% 
+  group_by(Territorio, `Fecha declaración`)%>% 
+  print()
+almeria <- confirmados %>% filter(Territorio=="Almería")
+almeriaacum <- colSums(almeria[3:8])
+cadiz <- confirmados %>% filter(Territorio=="Cádiz")
+cadizacum <- colSums(cadiz[3:8])
+cordoba <- confirmados %>% filter(Territorio=="Córdoba")
+cordobaacum <- colSums(cordoba[3:8])
+granada <- confirmados %>% filter(Territorio=="Granada")
+granadaacum <- colSums(granada[3:8])
+huelva <- confirmados %>% filter(Territorio=="Huelva")
+huelvaacum <- colSums(huelva[3:8])
+jaen <- confirmados %>% filter(Territorio=="Jaén")
+jaenacum <- colSums(jaen[3:8])
+malaga <- confirmados %>% filter(Territorio=="Málaga")
+malagaacum <- colSums(malaga[3:8])
+sevilla <- confirmados %>% filter(Territorio=="Sevilla")
+sevillaacum <- colSums(sevilla[3:8])
+dfaux <- data.frame("Provincia"=c("Sevilla","MÃ¡laga","JaÃ©n","Huelva","Granada","Córdoba","CÃ¡diz","AlmerÃ�a"),"Confirmados"=c(sevillaacum[6],malagaacum[6],jaenacum[6],huelvaacum[6],granadaacum[6],cordobaacum[6],cadizacum[6],almeriaacum[6]),"Hospitalizados"=c(sevillaacum[2],malagaacum[2],jaenacum[2],huelvaacum[2],granadaacum[2],cordobaacum[2],cadizacum[2],almeriaacum[2]),"Curados"=c(sevillaacum[4],malagaacum[4],jaenacum[4],huelvaacum[4],granadaacum[4],cordobaacum[4],cadizacum[4],almeriaacum[4]),"Defunciones"=c(sevillaacum[5],malagaacum[5],jaenacum[5],huelvaacum[5],granadaacum[5],cordobaacum[5],cadizacum[5],almeriaacum[5]))
+dfaux$id <- as.character(c(40,28,22,20,17,13,10,3))
+confirmadosmapa <- provinciasandalucia %>% 
+  left_join(dfaux, by= "id")
+mapa <- confirmadosmapa %>%
+  ggplot(aes(x=long, y= lat, group = group)) +
+  geom_polygon(aes(fill=Confirmados), color= "white", size = 0.2) +
+  labs( title = "Tasa de Contagios por Provincia",
+        fill = "") +
+  theme_minimal() +
+  theme(
+    axis.line = element_blank(),
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    axis.ticks = element_blank(),
+    plot.background = element_rect(fill = "snow", color = NA),
+    panel.background = element_rect(fill= "snow", color = NA),
+    plot.title = element_text(size = 16, hjust = 0),
+    plot.subtitle = element_text(size = 12, hjust = 0),
+    plot.caption = element_text(size = 8, hjust = 1),
+    legend.title = element_text(color = "grey40", size = 8),
+    legend.text = element_text(color = "grey40", size = 7, hjust = 0),
+    legend.position = c(0.93, 0.3),
+    plot.margin = unit(c(0.5,2,0.5,1), "cm")) +
+  scale_fill_gradient(low = "yellow", high = "red")
+ggplotly(mapa) %>%  
+  layout(title = 'Tasa de Contagios por Provincia')
+## Hospitalizados
+mapa <- confirmadosmapa %>%
+  ggplot(aes(x=long, y= lat, group = group)) +
+  geom_polygon(aes(fill=Hospitalizados), color= "white", size = 0.2) +
+  labs( title = "Tasa de Hospitalizados por Provincia",
+        fill = "") +
+  theme_minimal() +
+  theme(
+    axis.line = element_blank(),
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    axis.ticks = element_blank(),
+    plot.background = element_rect(fill = "snow", color = NA),
+    panel.background = element_rect(fill= "snow", color = NA),
+    plot.title = element_text(size = 16, hjust = 0),
+    plot.subtitle = element_text(size = 12, hjust = 0),
+    plot.caption = element_text(size = 8, hjust = 1),
+    legend.title = element_text(color = "grey40", size = 8),
+    legend.text = element_text(color = "grey40", size = 7, hjust = 0),
+    legend.position = c(0.93, 0.3),
+    plot.margin = unit(c(0.5,2,0.5,1), "cm")) +
+  scale_fill_gradient(low = "green", high = "red")
+ggplotly(mapa) %>%  
+  layout(title = 'Tasa de Hospitalizados por Provincia')
+## Curados
+mapa <- confirmadosmapa %>%
+  ggplot(aes(x=long, y= lat, group = group)) +
+  geom_polygon(aes(fill=Curados), color= "white", size = 0.2) +
+  labs( title = "Tasa de Curados por Provincia",
+        fill = "") +
+  theme_minimal() +
+  theme(
+    axis.line = element_blank(),
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    axis.ticks = element_blank(),
+    plot.background = element_rect(fill = "snow", color = NA),
+    panel.background = element_rect(fill= "snow", color = NA),
+    plot.title = element_text(size = 16, hjust = 0),
+    plot.subtitle = element_text(size = 12, hjust = 0),
+    plot.caption = element_text(size = 8, hjust = 1),
+    legend.title = element_text(color = "grey40", size = 8),
+    legend.text = element_text(color = "grey40", size = 7, hjust = 0),
+    legend.position = c(0.93, 0.3),
+    plot.margin = unit(c(0.5,2,0.5,1), "cm")) +
+  scale_fill_gradient(low ="aquamarine", high = "darkblue")
+ggplotly(mapa) %>%  
+  layout(title = 'Tasa de Curados por Provincia')
+## Defunciones
+mapa <- confirmadosmapa %>%
+  ggplot(aes(x=long, y= lat, group = group)) +
+  geom_polygon(aes(fill=Defunciones), color= "white", size = 0.2) +
+  labs( title = "Tasa de Defunciones por Provincia",
+        fill = "") +
+  theme_minimal() +
+  theme(
+    axis.line = element_blank(),
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    axis.ticks = element_blank(),
+    plot.background = element_rect(fill = "snow", color = NA),
+    panel.background = element_rect(fill= "snow", color = NA),
+    plot.title = element_text(size = 16, hjust = 0),
+    plot.subtitle = element_text(size = 12, hjust = 0),
+    plot.caption = element_text(size = 8, hjust = 1),
+    legend.title = element_text(color = "grey40", size = 8),
+    legend.text = element_text(color = "grey40", size = 7, hjust = 0),
+    legend.position = c(0.93, 0.3),
+    plot.margin = unit(c(0.5,2,0.5,1), "cm")) +
+  scale_fill_gradient(low ="gray46", high = "gray8")
+ggplotly(mapa) %>%  
+  layout(title = 'Tasa de Defunciones por Provincia')
+```

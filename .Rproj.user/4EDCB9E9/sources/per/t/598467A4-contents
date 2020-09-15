@@ -1,0 +1,30 @@
+# fcaR
+
+```{r}
+library("fcaR")
+library("arules")
+covid <- read.csv("COVID.csv", header = TRUE, sep = ",")
+head(covid)
+fc_covid <- FormalContext$new(covid)
+print(fc_covid)
+fc_covid$plot()
+fc_covid$objects
+```
+
+We find the implications and the concepts.
+
+```{r, eval = FALSE}
+S <- SparseSet$new(attributes = fc_covid$objects)
+fc_covid$find_implications()
+fc_covid$implications
+```
+
+As we can see, there are no implications. Maybe this could be fixed discretizing the columns with data about the patients and healed.
+
+```{r}
+fc_covid$find_concepts()
+fc_covid$concepts
+fc_covid$concepts$plot()
+```
+
+In this last plot we can see it's a quite small lattice, and it would require a deeper analysis to extract some conclusions.

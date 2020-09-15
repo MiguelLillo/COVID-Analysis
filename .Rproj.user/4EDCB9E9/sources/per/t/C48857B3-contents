@@ -1,0 +1,200 @@
+# Regression
+
+```{r, message=FALSE, warning=FALSE}
+library(readxl)
+library(ggplot2)
+library(dplyr)
+library(magrittr)
+library(ggplot2)
+library(GGally)
+```
+
+```{r, echo=FALSE}
+cs <- read_excel("cs_export.xls", 
+    col_types = c("text", "text", "numeric", 
+        "numeric", "numeric", "numeric", 
+         "numeric", "numeric"))
+```
+
+We process the dataset to be able to work with it.
+
+```{r}
+colnames(cs) <- c("Fecha", "Territorio", "Confirmados_PCR", "Hospitalizados", "UCI", "Curados", "Defunciones", "Total_confirmados")
+juntos <- 
+  filter(cs, cs$Territorio == "Andalucía")
+juntos <- mutate(juntos, Total = cumsum(Total_confirmados))
+                        
+                        
+c <- juntos$Curados
+h <- juntos$Hospitalizados
+d <- juntos$Defunciones
+uci <- juntos$UCI
+conf <- juntos$Confirmados_PCR
+totalconf <- juntos$Total_confirmados
+salidac <- vector("numeric",length(c))
+salidah <-vector("numeric",length(h))
+salidad <- vector("numeric",length(d))
+salidauci <- vector("numeric",length(uci))
+salidaconf <- vector("numeric",length(conf))
+salidatotalconf <- vector("numeric",length(totalconf))
+for(i in seq_along(c)){
+  
+  salidac[length(c)+1-i] <- c[i]
+  salidah[length(h)+1-i] <- h[i]
+  salidad[length(d)+1-i] <- d[i]
+  salidauci[length(uci)+1-i] <- uci[i]
+  salidaconf[length(conf)+1-i] <- conf[i]
+  salidatotalconf[length(totalconf)+1-i] <- totalconf[i]
+  
+}
+juntos$Curados <- salidac
+juntos$Hospitalizados <- salidah
+juntos$Defunciones <- salidad
+juntos$UCI <- salidauci
+juntos$Confirmados_PCR <- salidaconf
+juntos$Total_confirmados <- salidatotalconf
+                     
+  fechas <- as.Date(juntos$Fecha ,"%d/%m/%Y")
+juntos$Fecha <- sort(fechas)                      
+                        
+```
+
+
+We make the graph of how the cases have increased as a function of time.
+
+```{r}
+attach(juntos)
+grafica <- juntos %>% ggplot(aes(x= Fecha, y= Total))+geom_point()
+grafica
+```
+
+  
+
+In this graph we can see how the number of cases up to May increased exponentially. However, starting from this date, the number of cases per day begins to decrease, reaching the famous peak.
+
+## Model of the number of infections with respect to the date
+
+```{r}
+modFC <- lm(formula = juntos$Total ~ juntos$Fecha, data = juntos)
+modFC
+```
+
+
+```{r}
+summary(modFC)
+```
+  
+
+We start by checking if there is a model, for this we look at the values of F-statistic and p-value.
+** F-statistic ** is quite far from 1 (1609), so it indicates that there is a model.
+** P-value **, is well below 0.005, confirming that there is a model (H1 is met)
+Now that we know there is a model, let's study how good our model is.
+
+We look at $R^2$, which has a value of 0.9498, a pretty good value, since **94.98%** of the cases are collected with this model.
+We also see that there is almost no difference between adjusted $R^2$ and $R^2$, so *there is no overfitting* in our model and that the values are relevant (indicated by ***)
+Let's continue studying the model, for this we will see the graphs of the adjusted values and residuals.
+
+```{r}
+plot(modFC)
+```
+
+In these graphs we can see how it begins adjusting to the values. However, as cases increase, there is more waste.
+This may be due to the results of the contingency measures that were taken.
+With all this we could say that we have a pretty good model.
+## Model of the number of people who were hospitalized with respect to the number of infected.
+
+```{r}
+mHospitalizados <- lm(formula = Hospitalizados ~ Total_confirmados, data = juntos)
+mHospitalizados
+```
+```{r}
+summary(mHospitalizados)
+```
+
+We start by checking if there is a model, for this we look at the values of F-statistic and p-value.
+F-statistic is quite far from 1 (538), so it indicates that there is a model.
+P-value, is well below 0.005, which confirms that there is a model (H1 is met)
+Now that we know there is a model, let's study how good our model is.
+We look at $R^2$, which has a value of 0.8636, a pretty good value, since 86.36% of hospitalization cases are included in this model.
+We also see that there is almost no difference between adjusted $R^2$ and $R^2$, so there is no overfitting in our model and that the values are relevant (indicated by ***)
+Let's continue studying the model, for this we will see the graphs of the adjusted values and residuals.
+
+```{r}
+plot(mHospitalizados)
+```
+
+In the graphs we can see how there is dispersion of the values, and how it fits better at the beginning than at the end.
+We also observed that at the beginning of the period the number of hospitalized was very close to the number of cases. But as time progresses, the number of cases increases considerably, but not so much the number of hospitalized. This may be due to the fact that the population was informed of the first symptoms and the measures they had to take, so that an infected person could be detected in the early stages and monitored so that the severity could be reduced.
+
+```{r message=FALSE}
+library(readxl)
+library(tidyverse)
+datos <- read_excel("cs_export.xls")
+datos <- na.omit(datos)
+names(datos) <- c(names(datos[1:2]),"Confirmados_PCR",names(datos[4:7]),"Total_confirmados")
+varPred <- names(datos[c(3:6,8)])
+datos$`Fecha declaración` <- as.Date(datos$`Fecha declaración`, "%d/%m/%Y")
+datos <- arrange(datos, `Fecha declaración`)
+filasandalucia <- filter(datos, Territorio=="Andalucía" )
+```
+
+We are going to produce a multivariate regression model that explains the variable _Defunction_ using an iterative technique in which we will add each time the variable whose R-adjusted is greater.
+
+
+We define a function to calculate the linear model of a sum of variables
+
+```{r}
+linearAdjust <- function(df, y, x){
+  mod1 <- lm(str_c(y,"~",str_c(x,collapse="+")),df)
+}
+calcModR2 <- function(df,y,x){
+  mod <- linearAdjust(df,y,x)
+  summary(mod)$adj.r.squared
+}
+```
+
+We are adding variables while increasing the value of adjusted $R^2$.
+
+```{r}
+encontrarMejorAjuste <- function(df,varPos){
+  bestVars <- character(0)
+  aR2 <- 0
+  repeat{
+    aR2v <- map_dbl(varPos,~calcModR2(df, "Defunciones",c(bestVars,.)))
+    i    <- which.max(aR2v)
+    aR2M <- aR2v[i]
+    
+    if(aR2M<=aR2 ||length(varPos)<1) break
+    #Valor del r-ajustado añadido y nombre de la variable elegida
+    cat(sprintf("%1.4f %s\n",aR2M,varPos[i]))
+    aR2 <- aR2M
+    bestVars <- c(bestVars,varPos[i])
+    varPos <- varPos[-i]
+  }
+  mod <- linearAdjust(df,"Defunciones",bestVars)
+  list(vars=bestVars,mod=mod)
+}
+bestMod <- encontrarMejorAjuste(filasandalucia, varPred)
+```
+
+```{r}
+bestMod
+summary(bestMod$mod)
+```
+
+The model obtained would be of the form:
+
+$$
+Defunciones=`r bestMod$mod$coefficients[1]` +`r bestMod$mod$coefficients[2]`·Hospitalizados+`r bestMod$mod$coefficients[3]`·UCI+`r bestMod$mod$coefficients[4]`·ConfirmadosPCR+`r bestMod$mod$coefficients[5]`·Curados+`r bestMod$mod$coefficients[6]`·TotalConfirmados
+$$
+
+Finally we can represent the graph of the data (purple) with the regression obtained superimposed (red)
+
+```{r}
+g <- ggplot(filasandalucia, aes(x=`Fecha declaración`,y=Defunciones))+
+  ggtitle("Regresión multilineal")+
+  geom_point(colour="purple")+
+  geom_line(aes(`Fecha declaración`, predict.lm(bestMod$mod)), color="red")
+  
+g
+```

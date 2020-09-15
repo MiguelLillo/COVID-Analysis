@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1593300680189.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "125771768",
+    "id" : "8A594184",
+    "lastKnownWriteTime" : 1593337202,
+    "last_content_update" : 1593337202482,
+    "path" : "C:/Users/Beatriz Huertas/Desktop/3º Ingeniería informática/2º cuatrimestre/Laboratorio de computación científica/Book covid analysis/01_Visualization.Rmd",
+    "project_path" : "01_Visualization.Rmd",
+    "properties" : {
+        "cursorPosition" : "305,10",
+        "scrollLine" : "289"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

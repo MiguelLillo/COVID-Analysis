@@ -1,0 +1,80 @@
+# Association Rules
+
+```{r message=FALSE}
+library(readxl)
+library(dplyr)
+library(arules)
+library(arulesViz)
+datos <- read_excel("cs_export.xls")
+#View(head(datos))
+datos <- na.omit(datos)
+```
+
+We split the data of each province from those of Andalusia
+
+```{r separar}
+datos$`Fecha declaración` <- as.Date(datos$`Fecha declaración`, "%d/%m/%Y")
+datos$Territorio <- as.factor(datos$Territorio)
+filasandalucia <- filter(datos, Territorio=="Andalucía" )
+provincias <- setdiff(datos,filasandalucia)
+nrow(provincias)
+nrow(filasandalucia)
+```
+
+When working with numerical data the first step we have to carry out is to discretize them. The ICU and Death columns are very skewed so we use a different method.
+
+```{r}
+summary(provincias$UCI)
+summary(provincias$Defunciones)
+```
+
+```{r discretizar}
+for(i in c(3,4,6,8)){
+  provincias[[i]] <- discretize(provincias[[i]],breaks = 4, labels = c("Bajo","Normal","Alto","Muy alto"))  
+}
+provincias$UCI <- ordered(cut(provincias$UCI, c(-1,40,60),
+  labels = c("Bajo", "Alto")))
+provincias$Defunciones <-  ordered(cut(provincias$Defunciones, c(-1,5,80),
+  labels = c("Bajo", "Alto")))
+for(i in c(3,4,6,8)){
+  filasandalucia[[i]] <- discretize(filasandalucia[[i]],breaks = 4, labels = c("Bajo","Normal","Alto","Muy alto"))  
+}
+filasandalucia$UCI <- ordered(cut(filasandalucia$UCI, c(-1,40,60),
+  labels = c("Bajo", "Alto")))
+filasandalucia$Defunciones <-  ordered(cut(filasandalucia$Defunciones, c(-1,5,80),
+  labels = c("Bajo", "Alto")))
+```
+
+We apply the _apriori_ algorithm to the provinces dataset
+
+```{r apriori}
+reglas <- apriori(provincias[3:length(provincias)],parameter=list(supp=0.05,conf=0.5, minlen=2))
+reglas <- sort(reglas,by="lift")
+reglas <- reglas[!is.redundant(reglas)]
+summary(reglas)
+```
+
+In principle, we will try to predict the behavior of the _Hospitalized_ variable based on, for example, _Total confirmed (PCR + test)_
+
+```{r}
+#reglas_3 <- reglas[which(size(reglas)==3)]
+#inspect(head(reglas_3))
+s1 <- subset(reglas,subset=lhs %pin% "Total confirmados")
+inspect(head(s1))
+s1 <- subset(s1,subset=rhs %pin% "Hospitalizados")
+inspect(head(s1))
+```
+
+We can see a clear relationship between the number of confirmed and the number of hospitalized.
+
+In the following way we look for implications that on the right side have the variable _Defunctions_
+
+```{r}
+s2 <- subset(reglas,subset=rhs %pin% "Defunciones")
+inspect(head(s2))
+s2Alto <- subset(reglas,subset=rhs %pin% "Defunciones=Alto")
+plot(s2Alto, method="graph")
+```
+
+As we can see, most of the rules give us very obvious information such as ** {Hospitalized = Very high, Total confirmed (PCR + test) = Very high} => {Deaths = High} **
+It can also be interpreted as that there is a strong correlation between the different columns, but it is more efficient to apply regression methods in these cases in which we have quantitative variables.

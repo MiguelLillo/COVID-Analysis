@@ -1,0 +1,16 @@
+--- 
+title: "COVID dataset analyzing"
+author: "Cristina Díaz García, Beatriz Huertas Calvillo, Miguel Lillo del Barrio, María Vázquez Pendón"
+date: "`r Sys.Date()`"
+site: bookdown::bookdown_site
+documentclass: book
+bibliography: [book.bib, packages.bib]
+biblio-style: apalike
+link-citations: yes
+description: "This is an analysis of a COVID dataset using different approaches."
+always_allow_html: true
+---
+
+# Description {-}
+
+This is an analysis of a COVID dataset using different approaches.
